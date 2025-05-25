@@ -1,4 +1,7 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
 @inject NavigationManager NavigationManager
@@ -30,6 +33,9 @@
 
 <div class="container">
     <div class="row">
+        <input @bind="userCodeInput" placeholder="Your 4-digit code" maxlength="4" class="form-control" readonly="@isUserReadonly" />
+        <input @bind="receiverCodeInput" placeholder="Chat partner's 4-digit code" maxlength="4" class="form-control" />
+
         <div class="col-3">
             <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
         </div>
@@ -43,6 +49,9 @@
 </div>
 
 @code{
+    private string userCodeInput;
+    private string receiverCodeInput;
+
     private HubConnection hubConnection;
     private List<UserMessage> userMessages = new();
     private string usernameInput;
@@ -56,21 +65,21 @@
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
             .Build();
-        hubConnection.On<string, string>("ReceiveMessage", async (user, message) =>
+        hubConnection.On<string, string>("ReceiveMessage", (senderCode, message) =>
         {
-            await InvokeAsync(() =>
+        userMessages.Add(new UserMessage
             {
-                userMessages.Add(new UserMessage
-                    {
-                        Username = user,
-                        Message = message,
-                        CurrentUser = user == usernameInput,
-                        DateSent = DateTime.Now
-                    });
-
-                StateHasChanged();
+                Username = senderCode,
+                SenderCode = senderCode,
+                ReceiverCode = userCodeInput,
+                Message = message,
+                CurrentUser = senderCode == userCodeInput,
+                DateSent = DateTime.Now
             });
+
+        InvokeAsync(StateHasChanged);
         });
+
 
 
         await hubConnection.StartAsync();
@@ -78,16 +87,25 @@
 
     private async Task Send()
     {
-        if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(messageInput))
+        if (!string.IsNullOrWhiteSpace(userCodeInput) &&
+            !string.IsNullOrWhiteSpace(receiverCodeInput) &&
+            !string.IsNullOrWhiteSpace(messageInput))
         {
-            await hubConnection.SendAsync("SendMessage", usernameInput, messageInput);
+            // Register user only once
+            if (!isUserReadonly)
+            {
+                await hubConnection.SendAsync("RegisterCode", userCodeInput);
+                isUserReadonly = true;
+            }
 
-            isUserReadonly = true;
+            await hubConnection.SendAsync("SendMessage", userCodeInput, receiverCodeInput, messageInput);
+
+   
             messageInput = string.Empty;
-            StateHasChanged();
         }
-
     }
+
+
 
     public async ValueTask DisposeAsync()
     {
