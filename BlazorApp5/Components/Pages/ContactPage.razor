@@ -1,0 +1,82 @@
+﻿@page "/contacts"
+@using BlazorApp5.Data
+@using BlazorApp5.Models
+@using Microsoft.AspNetCore.Identity
+@inject ContactService ContactService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+
+<h3>Your Contacts</h3>
+
+@if (userContacts.Any())
+{
+    <ul class="list-group mb-4">
+        @foreach (var contact in userContacts)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>@contact.ContactDisplayName</strong> (@contact.ContactUserCode)
+                <button class="btn btn-sm btn-primary" @onclick="() => GoToChat(contact.ContactUserCode)">
+                    Chat
+                </button>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No contacts yet.</p>
+}
+
+<hr />
+
+<h4>Add New Contact</h4>
+<div class="input-group mb-3">
+    <input type="text" class="form-control" @bind="searchCode" maxlength="4" placeholder="Enter 4-digit code" />
+    <button class="btn btn-success" @onclick="AddContact">Add</button>
+</div>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+
+
+@code {
+    private List<Contact> userContacts = new();
+    private string searchCode;
+    private string statusMessage;
+    private ApplicationUser currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        currentUser = await UserManager.GetUserAsync(authState.User);
+        userContacts = await ContactService.GetContactsAsync(currentUser);
+    }
+
+    private async Task AddContact()
+    {
+        if (string.IsNullOrWhiteSpace(searchCode) || searchCode.Length != 4)
+        {
+            statusMessage = "Please enter a valid 4-digit code.";
+            return;
+        }
+
+        var success = await ContactService.AddContactByCodeAsync(currentUser, searchCode);
+
+        statusMessage = success ? "Contact added!" : "Contact not found or already added.";
+        if (success)
+        {
+            userContacts = await ContactService.GetContactsAsync(currentUser);
+            searchCode = string.Empty;
+        }
+    }
+
+    private void GoToChat(string code)
+    {
+        NavigationManager.NavigateTo($"/?receiver={code}");
+    }
+}
