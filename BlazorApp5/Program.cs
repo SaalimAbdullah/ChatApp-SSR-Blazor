@@ -1,4 +1,6 @@
 using BlazorApp5.Components;
+using BlazorApp5.Services;
+
 using BlazorApp5.Components.Account;
 using BlazorApp5.Data;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -23,6 +25,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<ContactService>();
+builder.Services.AddScoped<UserService>();
 
 
 builder.Services.AddCascadingAuthenticationState();
@@ -36,6 +39,10 @@ builder.Services.AddAuthentication(options =>
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     })
     .AddIdentityCookies();
+
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

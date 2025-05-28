@@ -4,10 +4,21 @@ using BlazorApp5.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-public class ContactService(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
+public class ContactService
 {
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public ContactService(IDbContextFactory<ApplicationDbContext> dbFactory, UserManager<ApplicationUser> userManager)
+    {
+        _dbFactory = dbFactory;
+        _userManager = userManager;
+    }
+
     public async Task<List<Contact>> GetContactsAsync(ApplicationUser currentUser)
     {
+        await using var dbContext = _dbFactory.CreateDbContext();
+
         return await dbContext.Contacts
             .Where(c => c.OwnerUserId == currentUser.Id)
             .ToListAsync();
@@ -15,6 +26,8 @@ public class ContactService(ApplicationDbContext dbContext, UserManager<Applicat
 
     public async Task<bool> AddContactByCodeAsync(ApplicationUser currentUser, string contactCode, string? displayName = null)
     {
+        await using var dbContext = _dbFactory.CreateDbContext();
+
         if (contactCode == currentUser.UserCode)
             return false;
 

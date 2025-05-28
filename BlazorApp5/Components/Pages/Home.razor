@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using BlazorApp5.Data
+@using BlazorApp5.Services
 @using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize]
@@ -9,8 +10,8 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
-@inject UserManager<ApplicationUser> UserManager
-@inject AuthenticationStateProvider AuthStateProvider
+
+@inject UserService UserService
 
 <div class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded" style="height: 500px;">
     @if (!userMessages.Any())
@@ -74,8 +75,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = await UserManager.GetUserAsync(authState.User);
+        var user = await UserService.GetCurrentUserAsync();
         userCode = user?.UserCode;
 
         hubConnection = new HubConnectionBuilder()
