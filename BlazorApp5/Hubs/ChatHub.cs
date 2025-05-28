@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using BlazorApp5.Data;
+using BlazorApp5.Models;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +11,13 @@ namespace BlazorApp5.Hubs
 {
     public class ChatHub : Hub
     {
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
+
+        public ChatHub(IDbContextFactory<ApplicationDbContext> dbFactory)
+        {
+            _dbFactory = dbFactory;
+        }
+
         private static readonly Dictionary<string, string> UserConnections = new(); // code => connectionId
 
         public override Task OnConnectedAsync()
@@ -37,16 +47,29 @@ namespace BlazorApp5.Hubs
 
         public async Task SendMessage(string senderCode, string receiverCode, string message)
         {
+            await using var db = _dbFactory.CreateDbContext();
+
+            db.Messages.Add(new Message
+            {
+                SenderCode = senderCode,
+                ReceiverCode = receiverCode,
+                MessageText = message,
+                SentAt = DateTime.UtcNow
+            });
+
+            await db.SaveChangesAsync();
+
+            // SignalR delivery
             if (UserConnections.TryGetValue(receiverCode, out var receiverConnectionId))
             {
                 await Clients.Client(receiverConnectionId).SendAsync("ReceiveMessage", senderCode, message);
             }
 
-            // Also send message back to sender (optional)
             if (UserConnections.TryGetValue(senderCode, out var senderConnectionId))
             {
                 await Clients.Client(senderConnectionId).SendAsync("ReceiveMessage", senderCode, message);
             }
         }
+
     }
 }

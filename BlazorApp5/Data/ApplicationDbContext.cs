@@ -7,6 +7,8 @@ namespace BlazorApp5.Data
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options)
     {
         public DbSet<Contact> Contacts { get; set; }
+        public DbSet<Message> Messages { get; set; }
+
 
     }
 }

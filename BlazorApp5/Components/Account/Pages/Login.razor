@@ -10,6 +10,9 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
+@inject UserManager<ApplicationUser> UserManager
+
+
 <PageTitle>Log in</PageTitle>
 
 <h1>Log in</h1>
@@ -87,30 +90,51 @@
 
     public async Task LoginUser()
     {
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user is null)
+        {
+            errorMessage = "No account found with that email.";
+            return;
+        }
+
+        if (!await UserManager.IsEmailConfirmedAsync(user))
+        {
+            errorMessage = "Please confirm your email before logging in.";
+            return;
+        }
+
+        var result = await SignInManager.PasswordSignInAsync(
+            user.UserName,  // 👈 Use the actual stored username
+            Input.Password,
+            Input.RememberMe,
+            lockoutOnFailure: false);
+
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
         {
-            RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+            RedirectManager.RedirectTo("Account/LoginWith2fa", new()
+                {
+                    ["returnUrl"] = ReturnUrl,
+                    ["rememberMe"] = Input.RememberMe
+                });
         }
         else if (result.IsLockedOut)
         {
-            Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            errorMessage = "Account is locked.";
+        }
+        else if (result.IsNotAllowed)
+        {
+            errorMessage = "Login not allowed. Check if email is confirmed.";
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = "Invalid login attempt.";
         }
     }
+
 
     private sealed class InputModel
     {

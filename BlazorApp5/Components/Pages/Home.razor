@@ -10,6 +10,8 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
+@inject MessageService MessageService
+
 
 @inject UserService UserService
 
@@ -20,22 +22,23 @@
     }
     <h1>your code: @userCode</h1>
 
-    @foreach (var userMessage in userMessages)
+    @foreach (var msg in userMessages)
     {
-        <div class="row mb-3 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
-            <div class="card shadow @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
+        <div class="row mb-3 d-flex @(msg.SenderCode == userCode ? "justify-content-end" : "")">
+            <div class="card shadow @(msg.SenderCode == userCode ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
                 <div class="card-header">
-                    @(userMessage.CurrentUser ? "You" : userMessage.Username)
+                    @(msg.SenderCode == userCode ? "You" : msg.SenderCode)
                 </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item @(userMessage.CurrentUser ? "color-green" : "")">@userMessage.Message</li>
+                    <li class="list-group-item">@msg.MessageText</li>
                 </ul>
                 <div class="card-footer">
-                    <span class="small">@userMessage.DateSent.ToString("HH:mm | MMM dd")</span>
+                    <span class="small">@msg.SentAt.ToLocalTime().ToString("HH:mm | MMM dd")</span>
                 </div>
             </div>
         </div>
     }
+
 </div>
 
 <div class="container">
@@ -65,7 +68,7 @@
     private string receiverCodeInput;
 
     private HubConnection hubConnection;
-    private List<UserMessage> userMessages = new();
+    private List<Message> userMessages = new();
     private string usernameInput;
     private string messageInput;
     private bool isUserReadonly = false;
@@ -81,33 +84,33 @@
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
             .Build();
+
         hubConnection.On<string, string>("ReceiveMessage", (senderCode, message) =>
         {
-        userMessages.Add(new UserMessage
-            {
-                Username = senderCode,
-                SenderCode = senderCode,
-                ReceiverCode = userCode,
-                Message = message,
-                CurrentUser = senderCode == userCode,
-                DateSent = DateTime.Now
-            });
+            userMessages.Add(new Message
+                {
+                    SenderCode = senderCode,
+                    ReceiverCode = userCode,
+                    MessageText = message,
+                    SentAt = DateTime.Now
+                });
 
-        InvokeAsync(StateHasChanged);
+            InvokeAsync(StateHasChanged);
         });
 
-
-
         await hubConnection.StartAsync();
-        
-            await hubConnection.SendAsync("RegisterCode", userCode);
-            isUserReadonly = true;
+        await hubConnection.SendAsync("RegisterCode", userCode);
+        isUserReadonly = true;
 
         if (!string.IsNullOrWhiteSpace(Receiver))
         {
             receiverCodeInput = Receiver;
+
+            // ✅ Load history from DB
+            userMessages = await MessageService.GetMessagesAsync(userCode, receiverCodeInput);
         }
     }
+
 
     private async Task Send()
     {
