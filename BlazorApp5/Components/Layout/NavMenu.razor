@@ -40,19 +40,29 @@
                 {
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>
-                            @contact.ContactDisplayName (@contact.ContactUserCode)
-                            @if (contactsWithNewMessages.Contains(contact.ContactUserCode))
+                            @if (editingContactCode == contact.ContactUserCode)
                             {
-                                <span class="badge bg-danger ms-2">New</span>
+                                <input class="form-control form-control-sm"
+                                       @bind="editedNickname"
+                                       @bind:event="oninput"
+                                       placeholder="Nickname" />
+                                <button class="btn btn-sm btn-success ms-1" @onclick="() => SaveNickname(contact)">Save</button>
+                                <button class="btn btn-sm btn-secondary ms-1" @onclick="CancelEdit">Cancel</button>
+                            }
+                            else
+                            {
+                                <span>@contact.ContactDisplayName (@contact.ContactUserCode)</span>
+                                if(contactsWithNewMessages.Contains(contact.ContactUserCode))
+                                {
+                                    <span class="badge bg-danger ms-2">New</span>
+                                }
                             }
                         </span>
-                        <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">
-                            Chat
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger"
-                                @onclick="() => RemoveContact(contact.ContactUserCode)">
-                            Remove
-                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">Chat</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveContact(contact.ContactUserCode)">Remove</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEdit(contact)">Edit</button>
+                        </div>
                     </li>
                 }
             </ul>
@@ -79,6 +89,8 @@
     private List<Contact> userContacts;
     private List<string> contactsWithNewMessages = new(); // track codes
     private string newContactCode;
+    private string editingContactCode;
+    private string editedNickname;
     private string statusMessage;
     private ApplicationUser currentUser;
 
@@ -145,6 +157,38 @@
             statusMessage = $"Failed to remove contact {contactCode}.";
         }
     }
+
+    private void StartEdit(Contact contact)
+    {
+        editingContactCode = contact.ContactUserCode;
+        editedNickname = contact.ContactDisplayName;
+    }
+
+    private void CancelEdit()
+    {
+        editingContactCode = null;
+        editedNickname = string.Empty;
+    }
+
+    private async Task SaveNickname(Contact contact)
+    {
+        if (string.IsNullOrWhiteSpace(editedNickname)) return;
+
+        var updated = await ContactService.UpdateNicknameAsync(currentUser, contact.ContactUserCode, editedNickname);
+        if (updated)
+        {
+            contact.ContactDisplayName = editedNickname;
+            statusMessage = "Nickname updated.";
+        }
+        else
+        {
+            statusMessage = "Failed to update nickname.";
+        }
+
+        editingContactCode = null;
+        editedNickname = string.Empty;
+    }
+
 
     private void ClearNewMessageIndicator(string contactCode)
     {

@@ -90,6 +90,19 @@ public class ContactService
         }
     }
 
+    public async Task<bool> UpdateNicknameAsync(ApplicationUser currentUser, string contactCode, string newNickname)
+    {
+        await using var dbContext = _dbFactory.CreateDbContext();
+
+        var contact = await dbContext.Contacts.FirstOrDefaultAsync(c =>
+            c.OwnerUserId == currentUser.Id && c.ContactUserCode == contactCode);
+
+        if (contact == null) return false;
+
+        contact.ContactDisplayName = newNickname;
+        await dbContext.SaveChangesAsync();
+        return true;
+    }
 
 
 
