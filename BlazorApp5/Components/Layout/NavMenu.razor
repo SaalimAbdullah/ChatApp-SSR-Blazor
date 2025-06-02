@@ -10,6 +10,8 @@
 @inject ContactService ContactService
 @inject UserService UserService
 @inject ChatHubService ChatHubService
+@inject ChatContextService ChatContext
+
 
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -37,7 +39,13 @@
                 @foreach (var contact in userContacts)
                 {
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>@contact.ContactDisplayName (@contact.ContactUserCode)</span>
+                        <span>
+                            @contact.ContactDisplayName (@contact.ContactUserCode)
+                            @if (contactsWithNewMessages.Contains(contact.ContactUserCode))
+                            {
+                                <span class="badge bg-danger ms-2">New</span>
+                            }
+                        </span>
                         <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">
                             Chat
                         </button>
@@ -69,6 +77,7 @@
 
 @code {
     private List<Contact> userContacts;
+    private List<string> contactsWithNewMessages = new(); // track codes
     private string newContactCode;
     private string statusMessage;
     private ApplicationUser currentUser;
@@ -85,6 +94,19 @@
                 InvokeAsync(StateHasChanged);
 
             });
+
+            ChatHubService.Connection.On<string, string>("ReceiveMessage", (senderCode, message) =>
+            {
+                if (senderCode != currentUser.UserCode && !IsCurrentChatOpen(senderCode))
+                {
+                    if (!contactsWithNewMessages.Contains(senderCode))
+                    {
+                        contactsWithNewMessages.Add(senderCode);
+                        InvokeAsync(StateHasChanged);
+                    }
+                }
+            });
+
 
             await ChatHubService.EnsureConnectedAsync(currentUser.UserCode);
 
@@ -124,9 +146,25 @@
         }
     }
 
+    private void ClearNewMessageIndicator(string contactCode)
+    {
+        if (contactsWithNewMessages.Contains(contactCode))
+        {
+            contactsWithNewMessages.Remove(contactCode);
+            StateHasChanged();
+        }
+    }
+
+    private bool IsCurrentChatOpen(string contactCode)
+    {
+        return ChatContext.CurrentReceiverCode == contactCode;
+    }
+
+
 
     private void GoToChat(string contactCode)
     {
+        ClearNewMessageIndicator(contactCode);
         NavigationManager.NavigateTo($"/?receiver={contactCode}", forceLoad: true);
     }
 }

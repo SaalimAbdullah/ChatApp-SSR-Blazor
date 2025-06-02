@@ -12,12 +12,15 @@
 @inject MessageService MessageService
 @inject UserService UserService
 @inject ChatHubService ChatHubService
+@inject ChatContextService ChatContext
+@inject IJSRuntime JS
+
 
 @implements IDisposable
 
 
 
-<div class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded" style="height: 500px;">
+<div @ref="chatContainer" style="height: 500px; overflow-y: auto;" class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded">
     @if (!userMessages.Any())
     {
         <p>No messages yet, start chatting!</p>
@@ -40,17 +43,11 @@
             </div>
         </div>
     }
-
 </div>
 
 <div class="container">
     <div class="row">
-        <input @bind="receiverCodeInput" placeholder="Chat partner's 4-digit code" maxlength="4" class="form-control" />
-
-        <div class="col-3">
-            <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
-        </div>
-        <div class="col-6">
+        <div class="col-8">
             <textarea @bind="messageInput" class="form-control" placeholder="Start typing..."></textarea>
         </div>
         <div class="col-3">
@@ -69,10 +66,16 @@
 
     private string receiverCodeInput;
 
+    private ElementReference chatContainer;
+
     private List<Message> userMessages = new();
     private string usernameInput;
     private string messageInput;
     private bool isUserReadonly = false;
+
+    private bool hasRendered = false;
+    private bool shouldScroll = false;
+
 
     public bool IsConnected => ChatHubService?.Connection?.State == HubConnectionState.Connected;
 
@@ -83,10 +86,12 @@
         var user = await UserService.GetCurrentUserAsync();
         userCode = user?.UserCode;
 
+        ChatContext.CurrentReceiverCode = Receiver;
+
         ChatHubService.OnConnectionStateChanged += UpdateUI;
 
-  
-        ChatHubService.Connection.On<string, string>("ReceiveMessage", (senderCode, message) =>
+
+        ChatHubService.Connection.On<string, string>("ReceiveMessage", async (senderCode, message) =>
         {
             if (receiverCodeInput == senderCode || senderCode == userCode)
             {
@@ -98,6 +103,7 @@
                         SentAt = DateTime.Now
                     });
 
+                shouldScroll = true;
                 InvokeAsync(StateHasChanged);
             }
         });
@@ -116,8 +122,25 @@
             receiverCodeInput = Receiver;
 
             userMessages = await MessageService.GetMessagesAsync(userCode, receiverCodeInput);
+            shouldScroll = true;
         }
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hasRendered = true;
+            shouldScroll = true; // Scroll after initial load
+        }
+
+        if (shouldScroll && hasRendered)
+        {
+            shouldScroll = false;
+            await ScrollToBottomAsync();
+        }
+    }
+
 
 
     private async Task Send()
@@ -131,10 +154,9 @@
 
             }
 
-            await ChatHubService.Connection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);
-
-   
+            await ChatHubService.Connection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);   
             messageInput = string.Empty;
+            
         }
     }
 
@@ -147,6 +169,12 @@
     {
         ChatHubService.OnConnectionStateChanged -= UpdateUI;
     }
+
+    private async Task ScrollToBottomAsync()
+    {
+        await JS.InvokeVoidAsync("scrollToBottom", chatContainer);
+    }
+
 
 
 

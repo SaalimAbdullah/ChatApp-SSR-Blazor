@@ -28,6 +28,8 @@ builder.Services.AddScoped<ContactService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<ChatHubService>();
+builder.Services.AddScoped<ChatContextService>();
+
 
 
 
