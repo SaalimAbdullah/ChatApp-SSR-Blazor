@@ -1,19 +1,21 @@
 ﻿@page "/"
+@attribute [Authorize]
+
 @using BlazorApp5.Data
 @using BlazorApp5.Services
 @using Microsoft.AspNetCore.Authorization
-
-@attribute [Authorize]
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
+
 @inject NavigationManager NavigationManager
-@implements IAsyncDisposable
-
 @inject MessageService MessageService
-
-
 @inject UserService UserService
+@inject ChatHubService ChatHubService
+
+@implements IDisposable
+
+
 
 <div class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded" style="height: 500px;">
     @if (!userMessages.Any())
@@ -67,46 +69,52 @@
 
     private string receiverCodeInput;
 
-    private HubConnection hubConnection;
     private List<Message> userMessages = new();
     private string usernameInput;
     private string messageInput;
     private bool isUserReadonly = false;
 
-    public bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
+    public bool IsConnected => ChatHubService?.Connection?.State == HubConnectionState.Connected;
 
 
     protected override async Task OnInitializedAsync()
     {
+
         var user = await UserService.GetCurrentUserAsync();
         userCode = user?.UserCode;
 
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
-            .Build();
+        ChatHubService.OnConnectionStateChanged += UpdateUI;
 
-        hubConnection.On<string, string>("ReceiveMessage", (senderCode, message) =>
+  
+        ChatHubService.Connection.On<string, string>("ReceiveMessage", (senderCode, message) =>
         {
-            userMessages.Add(new Message
-                {
-                    SenderCode = senderCode,
-                    ReceiverCode = userCode,
-                    MessageText = message,
-                    SentAt = DateTime.Now
-                });
+            if (receiverCodeInput == senderCode || senderCode == userCode)
+            {
+                userMessages.Add(new Message
+                    {
+                        SenderCode = senderCode,
+                        ReceiverCode = userCode,
+                        MessageText = message,
+                        SentAt = DateTime.Now
+                    });
 
-            InvokeAsync(StateHasChanged);
+                InvokeAsync(StateHasChanged);
+            }
         });
+      
 
-        await hubConnection.StartAsync();
-        await hubConnection.SendAsync("RegisterCode", userCode);
+        await ChatHubService.EnsureConnectedAsync(userCode);
+        StateHasChanged();
+
+        
+
+
         isUserReadonly = true;
 
         if (!string.IsNullOrWhiteSpace(Receiver))
         {
             receiverCodeInput = Receiver;
 
-            // ✅ Load history from DB
             userMessages = await MessageService.GetMessagesAsync(userCode, receiverCodeInput);
         }
     }
@@ -123,20 +131,23 @@
 
             }
 
-            await hubConnection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);
+            await ChatHubService.Connection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);
 
    
             messageInput = string.Empty;
         }
     }
 
-
-
-    public async ValueTask DisposeAsync()
+    private void UpdateUI()
     {
-        if (hubConnection is not null)
-        {
-            await hubConnection.DisposeAsync();
-        }
+        InvokeAsync(StateHasChanged);
     }
+
+    public void Dispose()
+    {
+        ChatHubService.OnConnectionStateChanged -= UpdateUI;
+    }
+
+
+
 }

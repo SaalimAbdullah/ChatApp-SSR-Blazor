@@ -2,11 +2,15 @@
 @using BlazorApp5.Models
 @using BlazorApp5.Services
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.SignalR.Client
+
 
 @inject NavigationManager NavigationManager
 
 @inject ContactService ContactService
 @inject UserService UserService
+@inject ChatHubService ChatHubService
+
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -14,42 +18,50 @@
     </div>
 </div>
 
-<div class="sidebar bg-light p-3" style="width: 250px; height: 100vh; overflow-y: auto;">
-    <h5 class="mb-3">Contacts</h5>
+@if (currentUser != null)
+{
+    <div class="sidebar bg-light p-3" style="width: 250px; height: 100vh; overflow-y: auto;">
+        <h5 class="mb-3">Contacts</h5>
 
-    @if (userContacts == null)
-    {
-        <p>Loading...</p>
-    }
-    else if (!userContacts.Any())
-    {
-        <p>No contacts</p>
-    }
-    else
-    {
-        <ul class="list-group">
-            @foreach (var contact in userContacts)
-            {
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>@contact.ContactDisplayName (@contact.ContactUserCode)</span>
-                    <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">
-                        Chat
-                    </button>
-                </li>
-            }
-        </ul>
-    }
+        @if (userContacts == null)
+        {
+            <p>Loading...</p>
+        }
+        else if (!userContacts.Any())
+        {
+            <p>No contacts</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var contact in userContacts)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>@contact.ContactDisplayName (@contact.ContactUserCode)</span>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">
+                            Chat
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => RemoveContact(contact.ContactUserCode)">
+                            Remove
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
 
-    <div class="mt-4">
-        <input class="form-control mb-2" placeholder="Add by code" @bind="newContactCode" maxlength="4" />
-        <button class="btn btn-success w-100" @onclick="AddContact">Add Contact</button>
+        <div class="mt-4">
+            <input class="form-control mb-2" placeholder="Add by code" @bind="newContactCode" maxlength="4" />
+            <button class="btn btn-success w-100" @onclick="AddContact">Add Contact</button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info mt-2">@statusMessage</div>
+        }
     </div>
 
-    @if (!string.IsNullOrEmpty(statusMessage))
-    {
-        <div class="alert alert-info mt-2">@statusMessage</div>
-    }
-</div>
+}
 
 
 
@@ -64,10 +76,18 @@
     protected override async Task OnInitializedAsync()
     {
         currentUser = await UserService.GetCurrentUserAsync();
-
-
         if (currentUser != null)
         {
+            ChatHubService.Connection.On<string, string>("ContactAdded", async (code, name) =>
+            {
+                Console.WriteLine($"[NavMenu] Received ContactAdded for: {code} ({name})");
+                userContacts = await ContactService.GetContactsAsync(currentUser);
+                InvokeAsync(StateHasChanged);
+
+            });
+
+            await ChatHubService.EnsureConnectedAsync(currentUser.UserCode);
+
             userContacts = await ContactService.GetContactsAsync(currentUser);
         }
     }
@@ -89,6 +109,21 @@
             newContactCode = string.Empty;
         }
     }
+
+    private async Task RemoveContact(string contactCode)
+    {
+        var removed = await ContactService.RemoveContactAsync(currentUser, contactCode);
+        if (removed)
+        {
+            userContacts = await ContactService.GetContactsAsync(currentUser);
+            statusMessage = $"Removed contact {contactCode}.";
+        }
+        else
+        {
+            statusMessage = $"Failed to remove contact {contactCode}.";
+        }
+    }
+
 
     private void GoToChat(string contactCode)
     {

@@ -59,6 +59,34 @@ namespace BlazorApp5.Hubs
 
             await db.SaveChangesAsync();
 
+            var receiverUser = await db.Users.FirstOrDefaultAsync(u => u.UserCode == receiverCode);
+            var senderUser = await db.Users.FirstOrDefaultAsync(u => u.UserCode == senderCode);
+
+            if (receiverUser != null && senderUser != null)
+            {
+                var alreadyAdded = await db.Contacts.AnyAsync(c =>
+                    c.OwnerUserId == receiverUser.Id && c.ContactUserCode == senderCode);
+
+                if (!alreadyAdded)
+                {
+                    db.Contacts.Add(new Contact
+                    {
+                        OwnerUserId = receiverUser.Id,
+                        ContactUserCode = senderCode,
+                        ContactDisplayName = senderCode // or use senderUser.Name if available
+                    });
+
+                    await db.SaveChangesAsync();
+
+                    if (UserConnections.TryGetValue(receiverCode, out var contactAddedConnId))
+                    {
+                        await Clients.Client(contactAddedConnId)
+                            .SendAsync("ContactAdded", senderCode, senderCode);
+                    }
+                }
+            }
+
+
             // SignalR delivery
             if (UserConnections.TryGetValue(receiverCode, out var receiverConnectionId))
             {

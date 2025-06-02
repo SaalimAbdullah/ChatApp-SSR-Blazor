@@ -52,4 +52,31 @@ public class ContactService
         await dbContext.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> RemoveContactAsync(ApplicationUser currentUser, string contactCode)
+    {
+        await using var dbContext = _dbFactory.CreateDbContext();
+
+        var contact = await dbContext.Contacts.FirstOrDefaultAsync(c =>
+            c.OwnerUserId == currentUser.Id && c.ContactUserCode == contactCode);
+
+        if (contact == null)
+            return false;
+
+        dbContext.Contacts.Remove(contact);
+        try
+        {
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another process deleted it, ignore gracefully
+            return false;
+        }
+    }
+
+
+
+
 }
