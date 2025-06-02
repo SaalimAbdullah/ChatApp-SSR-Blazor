@@ -21,7 +21,21 @@ public class ContactService
 
         return await dbContext.Contacts
             .Where(c => c.OwnerUserId == currentUser.Id)
+            .Select(c => new
+            {
+                Contact = c,
+                LastMessage = dbContext.Messages
+                    .Where(m =>
+                        (m.SenderCode == currentUser.UserCode && m.ReceiverCode == c.ContactUserCode) ||
+                        (m.SenderCode == c.ContactUserCode && m.ReceiverCode == currentUser.UserCode))
+                    .OrderByDescending(m => m.SentAt)
+                    .Select(m => m.SentAt)
+                    .FirstOrDefault()
+            })
+            .OrderByDescending(x => x.LastMessage)
+            .Select(x => x.Contact)
             .ToListAsync();
+
     }
 
     public async Task<bool> AddContactByCodeAsync(ApplicationUser currentUser, string contactCode, string? displayName = null)
@@ -31,8 +45,8 @@ public class ContactService
         if (contactCode == currentUser.UserCode)
             return false;
 
-        var userExists = await dbContext.Users.AnyAsync(u => u.UserCode == contactCode);
-        if (!userExists)
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserCode == contactCode);
+        if (user==null)
             return false;
 
         var alreadyExists = await dbContext.Contacts.AnyAsync(c =>
@@ -45,7 +59,7 @@ public class ContactService
         {
             OwnerUserId = currentUser.Id,
             ContactUserCode = contactCode,
-            ContactDisplayName = displayName ?? contactCode
+            ContactDisplayName = displayName ?? user.UserName
         };
 
         dbContext.Contacts.Add(contact);

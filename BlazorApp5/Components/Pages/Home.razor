@@ -148,11 +148,6 @@
         if (!string.IsNullOrWhiteSpace(receiverCodeInput) &&
             !string.IsNullOrWhiteSpace(messageInput))
         {
-            // Register user only once
-            if (!isUserReadonly)
-            {
-
-            }
 
             await ChatHubService.Connection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);   
             messageInput = string.Empty;
