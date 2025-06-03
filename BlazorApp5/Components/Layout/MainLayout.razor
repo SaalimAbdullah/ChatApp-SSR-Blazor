@@ -5,27 +5,82 @@
     <style>
         html, body {
             height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .layout-wrapper {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            width: 100vw;
             overflow: hidden;
         }
-    </style>
 
+        .sidebar {
+            width: 450px;
+            min-width: 450px;
+            background-color: #f8f9fa;
+            overflow-y: auto;
+            overflow-x:hidden;
+            /* Hide scrollbar (cross-browser) */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+            .sidebar::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Opera */
+            }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-row {
+            flex-shrink: 0;
+            background: #eee;
+            padding: 0.5rem;
+        }
+
+        .body-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .clickable-contact {
+            transition: background-color 0.2s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+            .clickable-contact:hover {
+                background-color: #e2e6ea; /* Light gray */
+
+                cursor: pointer;
+            }
+
+    </style>
 </HeadContent>
 
-
-<div class="page">
+<div class="layout-wrapper">
     <div class="sidebar">
         <NavMenu />
     </div>
 
-    <main>
-        <div class="top-row px-4">
+    <div class="main-content">
+        <div class="top-row">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
-        <article class="content px-4">
+        <div class="body-content">
             @Body
-        </article>
-    </main>
+        </div>
+    </div>
 </div>
 
 <div id="blazor-error-ui">

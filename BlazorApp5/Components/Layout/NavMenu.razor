@@ -14,15 +14,17 @@
 
 
 
-<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3 navbar navbar-dark" style="position:sticky;">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">BlazorApp5</a>
+        <a class="navbar-brand" href="">⌂  Chatterbox</a>
+
     </div>
 </div>
 
+
 @if (currentUser != null)
 {
-    <div class="sidebar bg-light p-3" style="width: 250px; height: 100vh; overflow-y: auto;">
+    <div class="sidebar bg-light p-3" style="height: 100vh; overflow-y: auto;">
         <h5 class="mb-3">Contacts</h5>
 
         @if (userContacts == null)
@@ -38,7 +40,9 @@
             <ul class="list-group">
                 @foreach (var contact in userContacts)
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <li class="list-group-item d-flex justify-content-between align-items-center clickable-contact"
+                        style="@(editingContactCode == contact.ContactUserCode ? "" : "cursor: pointer;")"
+                        @onclick="@(editingContactCode == contact.ContactUserCode ? null : () => GoToChat(contact.ContactUserCode))">
                         <span>
                             @if (editingContactCode == contact.ContactUserCode)
                             {
@@ -51,17 +55,18 @@
                             }
                             else
                             {
-                                <span>@contact.ContactDisplayName (@contact.ContactUserCode)</span>
+                                <span>
+                                      @contact.ContactDisplayName (@contact.ContactUserCode)
+                                </span>
                                 if(contactsWithNewMessages.Contains(contact.ContactUserCode))
                                 {
                                     <span class="badge bg-danger ms-2">New</span>
                                 }
                             }
                         </span>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToChat(contact.ContactUserCode)">Chat</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveContact(contact.ContactUserCode)">Remove</button>
+                        <div class="btn-group" @onclick:stopPropagation>
                             <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEdit(contact)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveContact(contact.ContactUserCode)">Remove</button>
                         </div>
                     </li>
                 }
