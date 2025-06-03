@@ -35,7 +35,6 @@ public class ContactService
             .OrderByDescending(x => x.LastMessage)
             .Select(x => x.Contact)
             .ToListAsync();
-
     }
 
     public async Task<bool> AddContactByCodeAsync(ApplicationUser currentUser, string contactCode, string? displayName = null)

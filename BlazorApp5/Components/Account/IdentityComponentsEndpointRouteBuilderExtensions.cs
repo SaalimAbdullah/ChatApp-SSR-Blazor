@@ -38,15 +38,19 @@ namespace Microsoft.AspNetCore.Routing
 
                 var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
                 return TypedResults.Challenge(properties, [provider]);
-            });
-
-            accountGroup.MapPost("/Logout", async (
+            });           
+            
+             accountGroup.MapPost("/Logout", async (
                 ClaimsPrincipal user,
                 SignInManager<ApplicationUser> signInManager,
                 [FromForm] string returnUrl) =>
             {
                 await signInManager.SignOutAsync();
-                return TypedResults.LocalRedirect($"~/{returnUrl}");
+                
+                var redirectUrl = !string.IsNullOrEmpty(returnUrl) && returnUrl[0] == '/' 
+                    ? returnUrl 
+                    : "/";
+                return TypedResults.LocalRedirect(redirectUrl);
             });
 
             var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();

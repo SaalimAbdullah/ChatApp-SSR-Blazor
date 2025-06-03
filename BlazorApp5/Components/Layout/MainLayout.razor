@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
 <HeadContent>
     <script src="js/chat.js"></script>
@@ -73,14 +74,25 @@
     </div>
 
     <div class="main-content">
-        <div class="top-row">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row d-flex justify-content-between align-items-center">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>            <AuthorizeView>
+                <Authorized>
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="returnUrl" value="" />
+                        <button type="submit" class="btn btn-outline-danger">Sign Out</button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="Account/Login" class="btn btn-outline-primary">Sign In</a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
 
         <div class="body-content">
             @Body
         </div>
-    </div>
+    </div>
 </div>
 
 <div id="blazor-error-ui">
