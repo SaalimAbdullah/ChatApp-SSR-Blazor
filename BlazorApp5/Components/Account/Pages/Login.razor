@@ -15,26 +15,43 @@
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-md-4">
+<div class="login-wrapper">
+    <div class="login-box">
+        <div style="display: flex; justify-content: center;">
+            <div class="brand-header">Chatiffy</div>
+        </div>
         <section>
             <StatusMessage Message="@errorMessage" />
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
-                <h2>Use a local account to log in.</h2>
+                <h2>Make Chatting More Secure.</h2>
+                <h6>Login with local account</h6>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <InputText @bind-Value="Input.Email"
+                               class="form-control"
+                               autocomplete="username"
+                               aria-required="true"
+                               placeholder="name@example.com"
+                               style="color: white; background-color: #212529;" />
                     <label for="email" class="form-label">Email</label>
                     <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
+
                 <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+                    <InputText type="password"
+                               @bind-Value="Input.Password"
+                               class="form-control"
+                               autocomplete="current-password"
+                               aria-required="true"
+                               placeholder="password"
+                               style="color: white; background-color: #212529;" />
                     <label for="password" class="form-label">Password</label>
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
+
+
                 <div class="checkbox mb-3">
                     <label class="form-label">
                         <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
@@ -58,18 +75,10 @@
             </EditForm>
         </section>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
 </div>
 
 @code {
     private string? errorMessage;
-
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
@@ -150,3 +159,121 @@
         public bool RememberMe { get; set; }
     }
 }
+<style>
+    .brand-header {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #00ED64;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        margin-bottom: 2rem;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px rgba(0, 237, 100, 0.3);
+        animation: slideIn 0.6s ease forwards;
+    }
+
+    body {
+        background: linear-gradient(135deg, #0e1e25, #1a2e35);
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+    }
+   h6 {
+        color: #00ED64;
+        font-weight: 200;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    h1, h2 {
+        color: #00ED64;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .register-box {
+        background-color: #1c262b;
+        padding: 2.5rem 3rem;
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0, 237, 100, 0.1);
+        width: 100%;
+        max-width: 480px;
+        margin: 2rem auto;
+        animation: fadeInUp 0.6s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-control {
+        display: flex;
+        align-items: center; /* Vertically center the content */
+        background-color: #263238;
+        border: 1px solid #37474f;
+        color: #e3e3e3;
+        border-radius: 12px;
+        padding: 0 1rem; /* Remove vertical padding */
+        font-size: 0.95rem;
+        height: 48px; /* Set consistent height */
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        box-sizing: border-box;
+    }
+
+
+        .form-control:focus {
+            border-color: #00ED64;
+            box-shadow: 0 0 0 0.2rem rgba(0, 237, 100, 0.2);
+            background-color: #2d3a40;
+        }
+
+    .btn-primary {
+        background-color: #00ED64;
+        border: none;
+        color: #0e1e25;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 0.75rem;
+        width: 100%;
+        border-radius: 12px;
+        transition: background 0.3s ease-in-out;
+        cursor: pointer;
+    }
+
+        .btn-primary:hover {
+            background-color: #00c253;
+        }
+
+    .form-label {
+        color: #b0bec5;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
+        display: block;
+    }
+
+    .checkbox label {
+        color: #90a4ae;
+        cursor: pointer;
+    }
+
+    a {
+        color: #00ED64;
+        text-decoration: none;
+        transition: text-shadow 0.2s;
+    }
+
+        a:hover {
+            text-shadow: 0 0 5px #00ED64;
+        }
+
+    .extra-links {
+        margin-top: 1.5rem;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .form-control::placeholder {
+        color: #b0bec5;
+        opacity: 0.7;
+    }
+</style>

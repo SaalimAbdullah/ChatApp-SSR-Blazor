@@ -1,114 +1,78 @@
 ﻿@page "/"
 @attribute [Authorize]
-
 @using BlazorApp5.Data
 @using BlazorApp5.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
-
 @inject NavigationManager NavigationManager
 @inject MessageService MessageService
 @inject UserService UserService
 @inject ChatHubService ChatHubService
 @inject ChatContextService ChatContext
 @inject IJSRuntime JS
-
-
 @implements IDisposable
-
-
-
-<div @ref="chatContainer" style="height: 500px; overflow-y: auto;" class="w-100 overflow-auto shadow-sm p-3 mb-5 bg-white rounded">
+<div @ref="chatContainer" class="chat-container">
     @if (string.IsNullOrWhiteSpace(receiverCodeInput))
     {
-        <p class="text-muted">Click on a contact to start messaging.</p>
+        <p class="empty-state">Click on a contact to start messaging.</p>
     }
     else if (!userMessages.Any())
     {
-        <p>No messages yet, start chatting!</p>
+        <p class="empty-state">No messages yet, start chatting!</p>
     }
     else
     {
-        <h1>your code: @userCode</h1>
-
+        <h2 class="user-code">You: <span>@userCode</span></h2>
         @foreach (var msg in userMessages)
         {
-            <div class="row mb-3 d-flex @(msg.SenderCode == userCode ? "justify-content-end" : "")">
-                <div class="card shadow @(msg.SenderCode == userCode ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
-                    <div class="card-header">
-                        @(msg.SenderCode == userCode ? "You" : msg.SenderCode)
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">@msg.MessageText</li>
-                    </ul>
-                    <div class="card-footer">
-                        <span class="small">@msg.SentAt.ToLocalTime().ToString("HH:mm | MMM dd")</span>
-                    </div>
+            bool isSender = msg.SenderCode == userCode;
+            <div class="message-row @(isSender ? "sent" : "received")">
+                <div class="message-bubble @(isSender ? "sent-bubble" : "received-bubble")">
+                    <div class="message-header">@((isSender) ? "You" : msg.SenderCode)</div>
+                    <div class="message-text">@msg.MessageText</div>
+                    <div class="message-footer">@msg.SentAt.ToLocalTime().ToString("HH:mm | MMM dd")</div>
                 </div>
             </div>
         }
     }
-
 </div>
 
-<div class="w-100 px-4">
-    <div class="row">
-        <div class="col-8">
-            <textarea @bind="messageInput"
-                      class="form-control"
-                      placeholder="Start typing..."
-                      disabled="@string.IsNullOrWhiteSpace(receiverCodeInput)">
-            </textarea>
-        </div>
-        <div class="col-3">
-            <button type="button"
-                    @onclick="Send"
-                    disabled="@(!IsConnected || string.IsNullOrWhiteSpace(receiverCodeInput))"
-                    class="btn btn-primary">
-                Send
-            </button>
-        </div>
-    </div>
+<div class="input-area">
+    <textarea
+        @bind="messageInput"
+        placeholder="Start typing..."
+        class="message-input"
+        disabled="@string.IsNullOrWhiteSpace(receiverCodeInput)">
+    </textarea>
+    <button
+        @onclick="Send"
+        disabled="@(!IsConnected || string.IsNullOrWhiteSpace(receiverCodeInput))"
+        class="send-btn">
+        Send
+    </button>
 </div>
-
-
 @code{
-
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Receiver { get; set; }
-
     private string userCode;
-
     private string receiverCodeInput;
-
     private ElementReference chatContainer;
-
     private List<Message> userMessages = new();
     private string usernameInput;
     private string messageInput;
     private bool isUserReadonly = false;
-
     private bool hasRendered = false;
     private bool shouldScroll = false;
-
-
     public bool IsConnected => ChatHubService?.Connection?.State == HubConnectionState.Connected;
-
-
     protected override async Task OnInitializedAsync()
     {
-
         var user = await UserService.GetCurrentUserAsync();
         userCode = user?.UserCode;
-
         ChatContext.CurrentReceiverCode = Receiver;
-
         ChatHubService.OnConnectionStateChanged += UpdateUI;
-
-
         ChatHubService.Connection.On<string, string>("ReceiveMessage", async (senderCode, message) =>
         {
             if (receiverCodeInput == senderCode || senderCode == userCode)
@@ -120,30 +84,20 @@
                         MessageText = message,
                         SentAt = DateTime.Now
                     });
-
                 shouldScroll = true;
                 InvokeAsync(StateHasChanged);
             }
         });
-      
-
         await ChatHubService.EnsureConnectedAsync(userCode);
         StateHasChanged();
-
-        
-
-
         isUserReadonly = true;
-
         if (!string.IsNullOrWhiteSpace(Receiver))
         {
             receiverCodeInput = Receiver;
-
             userMessages = await MessageService.GetMessagesAsync(userCode, receiverCodeInput);
             shouldScroll = true;
         }
     }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -151,16 +105,12 @@
             hasRendered = true;
             shouldScroll = true; // Scroll after initial load
         }
-
         if (shouldScroll && hasRendered)
         {
             shouldScroll = false;
             await ScrollToBottomAsync();
         }
     }
-
-
-
     private async Task Send()
     {
         if (!string.IsNullOrWhiteSpace(receiverCodeInput) &&
@@ -169,26 +119,191 @@
 
             await ChatHubService.Connection.SendAsync("SendMessage", userCode, receiverCodeInput, messageInput);   
             messageInput = string.Empty;
-            
         }
     }
-
     private void UpdateUI()
     {
         InvokeAsync(StateHasChanged);
     }
-
     public void Dispose()
     {
         ChatHubService.OnConnectionStateChanged -= UpdateUI;
     }
-
     private async Task ScrollToBottomAsync()
     {
         await JS.InvokeVoidAsync("scrollToBottom", chatContainer);
     }
-
-
-
-
 }
+<style>
+    :root {
+        --primary-color: #13aa52;
+        --primary-dark: #0e7c3f;
+        --bg-dark: #1e1e1e;
+        --text-light: #f1f1f1;
+        --text-muted: #bbbbbb;
+        --bubble-received: #ffddff;
+        --bubble-sent: #13aa52;
+        --font-main: 'Segoe UI', sans-serif;
+    }
+
+    /* Chat container */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        border-radius: 12px;
+        box-shadow: 0 0 12px rgba(19, 170, 82, 0.3);
+        padding: 1.25rem;
+        max-height: 65vh;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        margin-bottom: 1rem;
+        font-family: var(--font-main);
+        scrollbar-width: thin;
+    }
+
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 3px;
+        }
+
+    /* Chat empty state */
+    .empty-state {
+        text-align: center;
+        color: var(--text-muted);
+        font-style: italic;
+        margin-top: 2rem;
+    }
+
+    /* Header with user code */
+    .user-code {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    /* Message rows */
+    .message-row {
+        display: flex;
+        margin-bottom: 0.75rem;
+        animation: fadeIn 0.3s ease;
+    }
+
+        .message-row.sent {
+            justify-content: flex-end;
+        }
+
+        .message-row.received {
+            justify-content: flex-start;
+        }
+
+    /* Message bubble */
+    .message-bubble {
+        max-width: 70%;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        transition: all 0.2s ease-in-out;
+        word-wrap: break-word;
+    }
+
+    .sent-bubble {
+        background-color: var(--bubble-sent);
+        color: #ffffff;
+        border-bottom-right-radius: 0;
+    }
+
+    .received-bubble {
+        background-color: var(--bubble-received);
+        border: 1px solid #444;
+        color: var(--text-light);
+        border-bottom-left-radius: 0;
+    }
+
+    /* Message header and footer */
+    .message-header {
+        font-weight: bold;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .message-text {
+        margin-bottom: 0.4rem;
+    }
+
+    .message-footer {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-align: right;
+    }
+
+    /* Input area */
+    .input-area {
+        display: flex;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .message-input {
+        flex: 1;
+        height: 80px;
+        resize: none;
+        border-radius: 8px;
+        border: 1px solid var(--primary-color);
+        background-color: #2a2a2a;
+        color: var(--text-light);
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        font-family: var(--font-main);
+        transition: border-color 0.3s ease;
+    }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+        }
+
+        .message-input::placeholder {
+            color: #888;
+        }
+
+        .message-input:disabled {
+            background-color: #1a1a1a;
+            cursor: not-allowed;
+        }
+
+    /* Send button */
+    .send-btn {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.2rem;
+        font-size: 1rem;
+        transition: background-color 0.3s ease;
+    }
+
+        .send-btn:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+            cursor: pointer;
+        }
+
+        .send-btn:disabled {
+            background-color: #444;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+
+
+</style>

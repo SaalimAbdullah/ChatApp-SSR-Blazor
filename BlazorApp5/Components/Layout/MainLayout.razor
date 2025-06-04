@@ -3,16 +3,19 @@
 
 <HeadContent>
     <script src="js/chat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
+            background-color: #121212;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .layout-wrapper {
             display: flex;
-            flex-direction: row;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -21,58 +24,104 @@
         .sidebar {
             width: 450px;
             min-width: 450px;
-            background-color: #f8f9fa;
+            background-color: #fefefe;
+            color: #ccc;
             overflow-y: auto;
-            overflow-x:hidden;
-            /* Hide scrollbar (cross-browser) */
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
+            border-right: 1px solid #333;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
-
             .sidebar::-webkit-scrollbar {
-                display: none; /* Chrome, Safari, Opera */
+                display: none;
             }
-
         .main-content {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
-
         .top-row {
-            flex-shrink: 0;
-            background: #eee;
-            padding: 0.5rem;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #333;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+            .top-row a,
+            .top-row button {
+                color: #1abc9c;
+                text-decoration: none;
+                font-size: 0.95rem;
+                transition: color 0.2s ease;
+                display: flex;
+                align-items: center;
+            }
+
+                .top-row a i,
+                .top-row button i {
+                    margin-right: 0.5rem;
+                }
+
+                .top-row a:hover,
+                .top-row button:hover {
+                    color: #16a085;
+                }
 
         .body-content {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 1rem;
+            padding: 1.5rem;
+            background-color: #121212;
         }
 
         .clickable-contact {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 5px;
             transition: background-color 0.2s ease;
-            padding: 2px 4px;
-            border-radius: 4px;
-            display: inline-block;
         }
 
             .clickable-contact:hover {
-                background-color: #e2e6ea; /* Light gray */
-
+                background-color: #2a2a2a;
+                color: #1abc9c;
                 cursor: pointer;
             }
 
+        #blazor-error-ui {
+            background: #ff4444;
+            color: white;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 0.5rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            #blazor-error-ui a {
+                color: #ffffff;
+                margin-left: 1rem;
+                text-decoration: underline;
+            }
     </style>
 </HeadContent>
-
-<div class="layout-wrapper">
-    <div class="sidebar">
+<div class="layout-wrapper" style="display: flex; height: 100vh; width: 100vw; overflow: hidden; background-color: #121212; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <div class="sidebar" style=" min-width: 320px; background-color: #ffffff; color: #ccc; overflow-y: 0; border-right: 1px solid #333; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); scrollbar-width: none; -ms-overflow-style: none;">
         <NavMenu />
     </div>
+    <div class="main-content" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="top-row px-3 py-2 d-flex justify-content-between align-items-center" style="background-color: #1a1a1a; border-bottom: 1px solid #333;">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-decoration-none" style="color: #13aa52;">
+                <i class="fas fa-info-circle me-1"></i> About
+            </a>
 
+<<<<<<< Updated upstream
     <div class="main-content">
         <div class="top-row d-flex justify-content-between align-items-center">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>            <AuthorizeView>
@@ -85,15 +134,34 @@
                 </Authorized>
                 <NotAuthorized>
                     <a href="Account/Login" class="btn btn-outline-primary">Sign In</a>
+=======
+            <AuthorizeView>
+                <Authorized>
+                    <form action="Account/Logout" method="post" class="d-inline">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="returnUrl" value="" />
+                        <button type="submit" class="btn btn-sm" style="background-color: #121212; color: #13aa52; border: 1px solid #13aa52;">
+                            <i class="fas fa-sign-out-alt me-1"></i> Sign Out
+                        </button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="Account/Login" class="btn btn-sm" style="background-color: #121212; color: #13aa52; border: 1px solid #13aa52;">
+                        <i class="fas fa-sign-in-alt me-1"></i> Sign In
+                    </a>
+>>>>>>> Stashed changes
                 </NotAuthorized>
             </AuthorizeView>
         </div>
 
-        <div class="body-content">
+        <!-- Body Content -->
+        <div class="body-content" style="flex-grow: 1; overflow-y: auto; padding: 1.5rem; background: linear-gradient(to bottom, #121212, #1e1e1e, #2c2c2c);">
+
             @Body
         </div>
     </div>
 </div>
+
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.

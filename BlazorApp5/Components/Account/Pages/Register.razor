@@ -54,13 +54,7 @@
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
+
 </div>
 
 @code {
@@ -176,7 +170,180 @@
 
         return next.ToString("D4"); // e.g., "0001", "0002"
     }
-
-
-
 }
+<style>
+    :root {
+      --primary-green: #47a248;
+      --primary-dark: #1a1a1a;
+      --primary-light: #f6f9f7;
+      --input-bg: #2b2b2b;
+      --input-border: #444;
+      --error-red: #ff4c60;
+      --text-light: #e6e6e6;
+      --text-muted: #999;
+      --shadow-color: rgba(0, 0, 0, 0.25);
+    }
+
+    body, html {
+      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-light);
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1, h2, h3 {
+      font-weight: 600;
+      color: var(--primary-green);
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 2.75rem;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      max-width: 900px;
+      width: 100%;
+      gap: 2rem;
+      background-color: #121212;
+      border-radius: 12px;
+      box-shadow: 0 12px 25px var(--shadow-color);
+      padding: 2rem 3rem;
+    }
+
+    .col-md-4 {
+      flex: 1 1 35%;
+      min-width: 320px;
+    }
+
+    .col-md-6 {
+      flex: 1 1 55%;
+      min-width: 320px;
+      color: var(--text-light);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-floating {
+      position: relative;
+      margin-bottom: 1.8rem;
+    }
+
+    .form-floating input.form-control {
+      width: 100%;
+      background-color: var(--input-bg);
+      border: 1.8px solid var(--input-border);
+      border-radius: 10px;
+      padding: 1.25rem 1rem 0.5rem 1rem;
+      font-size: 1rem;
+      color: var(--text-light);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .form-floating input.form-control::placeholder {
+      color: transparent;
+    }
+
+    .form-floating input.form-control:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 8px var(--primary-green);
+      background-color: #222;
+    }
+
+    .form-floating label {
+      position: absolute;
+      top: 1.25rem;
+      left: 1rem;
+      color: var(--text-muted);
+      font-size: 1rem;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-floating input.form-control:focus + label,
+    .form-floating input.form-control:not(:placeholder-shown) + label {
+      top: 0.3rem;
+      font-size: 0.8rem;
+      color: var(--primary-green);
+      font-weight: 600;
+      background-color: #121212;
+      padding: 0 0.25rem;
+      border-radius: 5px;
+    }
+
+    .text-danger {
+      color: var(--error-red);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    button.btn-primary {
+      background: linear-gradient(90deg, #3fb054 0%, #47a248 100%);
+      border: none;
+      padding: 1rem;
+      font-size: 1.15rem;
+      border-radius: 12px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.4s ease;
+      box-shadow: 0 4px 15px rgba(71, 162, 72, 0.6);
+    }
+
+    button.btn-primary:hover,
+    button.btn-primary:focus {
+      background: linear-gradient(90deg, #2a7a33 0%, #3b8c3d 100%);
+      box-shadow: 0 6px 20px rgba(42, 122, 51, 0.75);
+      outline: none;
+    }
+
+    .status-message {
+      margin-bottom: 1rem;
+      font-weight: 700;
+      color: var(--error-red);
+      background-color: #3f1a1a;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px var(--error-red);
+    }
+
+    section {
+      background-color: #1f1f1f;
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      color: var(--text-light);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 1rem 0 1.5rem 0;
+    }
+
+    /* Responsive */
+    </style>

@@ -3,92 +3,83 @@
 @using BlazorApp5.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.SignalR.Client
-
-
 @inject NavigationManager NavigationManager
-
 @inject ContactService ContactService
 @inject UserService UserService
 @inject ChatHubService ChatHubService
 @inject ChatContextService ChatContext
-
-
-
-<div class="top-row ps-3 navbar navbar-dark" style="position:sticky;">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">⌂  Chatterbox</a>
-
+<div class="top-row navbar navbar-dark" style="position: sticky; top: 0; z-index: 999; background-color: #13aa52; padding: 0.75rem 1rem;">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <a class="navbar-brand text-white fw-bold" href="" style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-comments"></i> Chatterbox
+        </a>
     </div>
 </div>
 
-
 @if (currentUser != null)
 {
-    <div class="sidebar bg-light p-3" style="height: 100vh; overflow-y: auto;">
-        <h5 class="mb-3">Contacts</h5>
+    <div class="chat-sidebar">
+        <h5 class="sidebar-header">Contacts</h5>
 
         @if (userContacts == null)
         {
-            <p>Loading...</p>
+            <p class="loading-state">Loading...</p>
         }
         else if (!userContacts.Any())
         {
-            <p>No contacts</p>
+            <p class="empty-state">No contacts</p>
         }
         else
         {
-            <ul class="list-group">
+            <ul class="contact-list">
                 @foreach (var contact in userContacts)
                 {
-                    <li class="list-group-item d-flex justify-content-between align-items-center clickable-contact"
-                        style="@(editingContactCode == contact.ContactUserCode ? "" : "cursor: pointer;")"
+                    <li class="contact-item @(editingContactCode == contact.ContactUserCode ? "editing" : "")"
                         @onclick="@(editingContactCode == contact.ContactUserCode ? null : () => GoToChat(contact.ContactUserCode))">
-                        <span>
+                        <div class="contact-content">
                             @if (editingContactCode == contact.ContactUserCode)
                             {
-                                <input class="form-control form-control-sm"
+                                <input class="contact-edit"
                                        @bind="editedNickname"
                                        @bind:event="oninput"
                                        placeholder="Nickname" />
-                                <button class="btn btn-sm btn-success ms-1" @onclick="() => SaveNickname(contact)">Save</button>
-                                <button class="btn btn-sm btn-secondary ms-1" @onclick="CancelEdit">Cancel</button>
+                                <div>
+                                    <button class="btn btn-save" @onclick="() => SaveNickname(contact)">Save</button>
+                                    <button class="btn btn-cancel" @onclick="CancelEdit">Cancel</button>
+                                </div>
                             }
                             else
                             {
-                                <span>
-                                      @contact.ContactDisplayName (@contact.ContactUserCode)
+                                <span class="contact-name">
+                                    @contact.ContactDisplayName (@contact.ContactUserCode)
+                                    @if (contactsWithNewMessages.Contains(contact.ContactUserCode))
+                                    {
+                                        <span class="new-badge">New</span>
+                                    }
                                 </span>
-                                if(contactsWithNewMessages.Contains(contact.ContactUserCode))
-                                {
-                                    <span class="badge bg-danger ms-2">New</span>
-                                }
                             }
-                        </span>
-                        <div class="btn-group" @onclick:stopPropagation>
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEdit(contact)">Edit</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveContact(contact.ContactUserCode)">Remove</button>
+                        </div>
+
+                        <div class="contact-actions" @onclick:stopPropagation>
+                            <button class="btn btn-edit" @onclick="() => StartEdit(contact)">Edit</button>
+                            <button class="btn btn-remove" @onclick="() => RemoveContact(contact.ContactUserCode)">Remove</button>
                         </div>
                     </li>
                 }
             </ul>
         }
 
-        <div class="mt-4">
-            <input class="form-control mb-2" placeholder="Add by code" @bind="newContactCode" maxlength="4" />
-            <button class="btn btn-success w-100" @onclick="AddContact">Add Contact</button>
+        <div class="add-contact">
+            <input class="form-control" placeholder="Add by code" @bind="newContactCode" maxlength="4" />
+            <button class="btn btn-add" @onclick="AddContact">Add Contact</button>
         </div>
 
         @if (!string.IsNullOrEmpty(statusMessage))
         {
-            <div class="alert alert-info mt-2">@statusMessage</div>
+            <div class="status-message">@statusMessage</div>
         }
     </div>
-
 }
-
-
-
-
 
 @code {
     private List<Contact> userContacts;
@@ -217,3 +208,304 @@
         NavigationManager.NavigateTo($"/?receiver={contactCode}", forceLoad: true);
     }
 }
+<style>
+    body, html {
+        margin : 0;
+        padding : 0;
+        overflow-x: hidden;
+        background-color: antiquewhite;
+    }
+    /* 1. Sticky sidebar with a subtle shadow for better layering */
+    .chat-sidebar {
+        background-color: black;
+        position: sticky;
+        top: 0;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.4);
+    }
+
+    /* 2. Smooth scrolling for overflow */
+    .chat-sidebar {
+        scroll-behavior: smooth;
+    }
+
+    /* 3. Contact item: add subtle border and focus outline for accessibility */
+    .contact-item {
+        border: 1px solid transparent;
+        outline-offset: 2px;
+    }
+
+        .contact-item:hover,
+        .contact-item:focus-within {
+            border-color: #9acd32;
+            outline: none;
+        }
+
+
+    .new-badge {
+        animation: pulse 2s infinite ease-in-out;
+    }
+
+    /* 5. Buttons: increase hit area and add subtle box shadows */
+    .contact-actions button,
+    .btn-save,
+    .btn-cancel,
+    .btn-add {
+        padding: 8px 14px; /* more clickable area */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+        .contact-actions button:hover,
+        .btn-save:hover,
+        .btn-cancel:hover,
+        .btn-add:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+    /* 6. Input fields: add subtle inner shadow for depth */
+    .contact-edit,
+    .form-control {
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* 7. Add subtle transition to background-color for inputs */
+    .contact-edit,
+    .form-control {
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+        .contact-edit:focus,
+        .form-control:focus {
+            background-color: #1f5a32;
+            border-color: #b3d977;
+            outline: none;
+        }
+
+    /* 8. Sidebar header: add subtle underline with opacity */
+    .sidebar-header {
+        border-bottom: 2px solid #9acd32cc;
+        padding-bottom: 6px;
+        margin-bottom: 20px;
+    }
+
+    /* 9. Add subtle separation line between contact content and actions */
+    .contact-content {
+        flex: 1;
+        padding-right: 12px;
+        border-right: 1px solid #2f774c;
+    }
+
+
+    /* 11. Cursor pointer only on clickable areas, avoid on inputs/buttons */
+    .contact-actions button,
+    .btn-save,
+    .btn-cancel,
+    .btn-add {
+        cursor: pointer;
+    }
+
+    .contact-edit {
+        cursor: text;
+    }
+
+    /* 12. Status message: improve contrast and add fade-in effect */
+    .status-message {
+        color: #d9e8c2;
+        background-color: #346732cc;
+        border-left-color: #a4c639;
+        opacity: 0;
+        animation: fadeIn 0.5s forwards;
+    }
+
+  
+    .loading-state,
+    .empty-state {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+ 
+
+    .chat-sidebar {
+        width: 320px;
+        height: 100vh;
+        background-color: #0f2d13; /* MongoDB dark green */
+        border-right: 1px solid #164e2e;
+        padding: 20px;
+        overflow-y: auto;
+        color: #c7d9b5; /* light greenish text */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .sidebar-header {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #9acd32; /* limegreen MongoDB accent */
+        margin-bottom: 20px;
+    }
+
+    .contact-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .contact-item {
+        background-color: #1e3a1a;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .contact-item:hover {
+            background-color: #2a5529;
+        }
+
+        .contact-item.editing {
+            cursor: default;
+            background-color: #346732;
+        }
+
+    .contact-content {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: #d9e8c2;
+    }
+
+    .contact-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #b3d977;
+    }
+
+    .contact-edit {
+        background-color: #164e2e;
+        border: 1px solid #2f774c;
+        color: #b3d977;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        width: 180px;
+    }
+
+    .contact-actions button {
+        background: none;
+        border: none;
+        color: #a3c764;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-left: 8px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+
+        .contact-actions button:hover {
+            background-color: #9acd32;
+            color: #1b2a10;
+        }
+
+    .btn-save {
+        background-color: #7cb342;
+        color: #f0f9eb;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-right: 8px;
+    }
+
+        .btn-save:hover {
+            background-color: #a4c639;
+        }
+
+    .btn-cancel {
+        background-color: #d32f2f;
+        color: white;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .btn-cancel:hover {
+            background-color: #f44336;
+        }
+
+    .btn-edit {
+        color: #c5e1a5;
+    }
+
+    .btn-remove {
+        color: #ef5350;
+    }
+
+    .new-badge {
+        background-color: #76ff03;
+        color: #1b2a10;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 12px;
+        margin-left: 8px;
+        font-weight: 700;
+    }
+
+    .add-contact {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-control {
+        background-color: #164e2e;
+        border: 1px solid #2f774c;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #c7d9b5;
+        font-size: 1rem;
+    }
+
+        .form-control::placeholder {
+            color: #9acd32;
+        }
+
+    .btn-add {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 10px;
+        font-weight: 700;
+        transition: background-color 0.3s;
+        cursor: pointer;
+    }
+
+        .btn-add:hover {
+            background-color: #66bb6a;
+        }
+
+    .status-message {
+        margin-top: 12px;
+        padding: 10px;
+        background-color: #1e3a1a;
+        border-left: 4px solid #9acd32;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #b3d977;
+    }
+
+    .loading-state,
+    .empty-state {
+        color: #9acd32aa;
+        padding: 10px;
+        font-style: italic;
+    }
+</style>  
